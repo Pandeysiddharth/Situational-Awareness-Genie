@@ -1,0 +1,3 @@
+command: ['pnpm', 'run', 'start']
+health_check:
+  path: /health

@@ -1,0 +1,1797 @@
+{
+  "datasets": [
+    {
+      "name": "today",
+      "displayName": "today",
+      "queryLines": [
+        "SELECT model_name, owner_team, bucket, risk_tier, status, health_score, red_metrics, amber_metrics FROM demo_unified_model_monitoring.hub_gold.fact_model_health_daily WHERE metric_date = (SELECT max(metric_date) FROM demo_unified_model_monitoring.hub_gold.fact_model_health_daily) ORDER BY health_score"
+      ]
+    },
+    {
+      "name": "kpis",
+      "displayName": "kpis",
+      "queryLines": [
+        "SELECT count(*) AS models, sum(CASE WHEN status='red' THEN 1 ELSE 0 END) AS red, sum(CASE WHEN status='amber' THEN 1 ELSE 0 END) AS amber, sum(CASE WHEN status='green' THEN 1 ELSE 0 END) AS green, round(avg(health_score),1) AS avg_health FROM demo_unified_model_monitoring.hub_gold.fact_model_health_daily WHERE metric_date = (SELECT max(metric_date) FROM demo_unified_model_monitoring.hub_gold.fact_model_health_daily)"
+      ]
+    },
+    {
+      "name": "health_trend",
+      "displayName": "health trend",
+      "queryLines": [
+        "SELECT metric_date, model_name, health_score FROM demo_unified_model_monitoring.hub_gold.fact_model_health_daily"
+      ]
+    },
+    {
+      "name": "inventory",
+      "displayName": "inventory",
+      "queryLines": [
+        "SELECT d.model_name, d.owner_team, d.risk_tier, d.bucket, d.lane, d.current_version, d.source_workspace,\n",
+        "                    max(h.metric_date) AS last_monitored, sum(h.n_red) AS red_metric_days_30d, sum(h.n_amber) AS amber_metric_days_30d\n",
+        "                    FROM demo_unified_model_monitoring.hub_gold.dim_model d LEFT JOIN demo_unified_model_monitoring.hub_gold.fact_model_health_daily h ON d.model_id = h.model_id AND h.metric_date >= date_sub(current_date(), 30)\n",
+        "                    GROUP BY ALL ORDER BY red_metric_days_30d DESC"
+      ]
+    },
+    {
+      "name": "alerts",
+      "displayName": "alerts",
+      "queryLines": [
+        "SELECT metric_date, model_name, owner_team, display_name AS metric, alert_type, to_status, round(eval_value,4) AS value, round(threshold,4) AS threshold, message FROM demo_unified_model_monitoring.hub_gold.fact_alerts ORDER BY metric_date DESC LIMIT 200"
+      ]
+    },
+    {
+      "name": "breach_by_category",
+      "displayName": "breach by category",
+      "queryLines": [
+        "SELECT category, model_name, count(*) AS breach_days FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE status IN ('amber','red') AND metric_date >= date_sub(current_date(), 30) GROUP BY ALL"
+      ]
+    },
+    {
+      "name": "pd_perf",
+      "displayName": "pd perf",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, eval_value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='pd_counterparty_default' AND contract_name IN ('accuracy','precision','recall','f1_macro')"
+      ]
+    },
+    {
+      "name": "pd_drift",
+      "displayName": "pd drift",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='pd_counterparty_default' AND contract_name IN ('data_drift_psi','data_drift_js','label_drift_js','concept_drift_score')"
+      ]
+    },
+    {
+      "name": "pd_fair",
+      "displayName": "pd fair",
+      "queryLines": [
+        "SELECT metric_date, slice_value AS country, value AS approval_rate FROM demo_unified_model_monitoring.hub_gold.fact_metric_slice_daily WHERE model_id='pd_counterparty_default' AND contract_name='approval_rate_gap'"
+      ]
+    },
+    {
+      "name": "fc_err",
+      "displayName": "fc err",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='trade_volume_forecast' AND contract_name IN ('mae','rmse')"
+      ]
+    },
+    {
+      "name": "rag_quality",
+      "displayName": "rag quality",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, eval_value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='credit_policy_rag' AND contract_name IN ('groundedness','context_relevance','response_relevance','precision_at_k','recall_at_k')"
+      ]
+    },
+    {
+      "name": "safety",
+      "displayName": "safety",
+      "queryLines": [
+        "SELECT metric_date, model_name, eval_value AS safety_violation_rate FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE contract_name='safety_violation_rate'"
+      ]
+    },
+    {
+      "name": "agent_gov",
+      "displayName": "agent gov",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, eval_value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='rm_client_brief_agent' AND contract_name IN ('permission_compliance_rate','approval_adherence_rate','recovery_success_rate','escalation_appropriateness','tool_accuracy')"
+      ]
+    },
+    {
+      "name": "cost",
+      "displayName": "cost",
+      "queryLines": [
+        "SELECT metric_date, model_name, value AS usd FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE contract_name IN ('cost_per_request','cost_per_successful_query')"
+      ]
+    },
+    {
+      "name": "explorer",
+      "displayName": "explorer",
+      "queryLines": [
+        "SELECT model_name, display_name AS metric, category, round(value,4) AS value, round(eval_value,4) AS evaluated, round(amber_threshold,4) AS amber, round(red_threshold,4) AS red, status, source FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE metric_date = (SELECT max(metric_date) FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily) ORDER BY CASE status WHEN 'red' THEN 0 WHEN 'amber' THEN 1 ELSE 2 END, model_name"
+      ]
+    },
+    {
+      "name": "triage_kpi",
+      "displayName": "triage kpi",
+      "queryLines": [
+        "SELECT owner_team, open_alerts, open_p1, unacknowledged, mtta_hours, mttr_hours, false_positive_rate FROM demo_unified_model_monitoring.hub_gold.fact_triage_kpis"
+      ]
+    },
+    {
+      "name": "triage_open",
+      "displayName": "triage open",
+      "queryLines": [
+        "SELECT priority, model_name, display_name AS metric, triage_status, assignee, metric_date, message FROM demo_unified_model_monitoring.hub_gold.fact_alert_triage WHERE triage_status IN ('open','acknowledged','investigating') ORDER BY priority, metric_date DESC"
+      ]
+    },
+    {
+      "name": "memory",
+      "displayName": "memory",
+      "queryLines": [
+        "SELECT metric_date, display_name AS metric, eval_value FROM demo_unified_model_monitoring.hub_gold.fact_metric_health_daily WHERE model_id='rm_client_brief_agent' AND contract_name LIKE '%memory%'"
+      ]
+    }
+  ],
+  "pages": [
+    {
+      "name": "portfolio",
+      "displayName": "Portfolio overview",
+      "layout": [
+        {
+          "widget": {
+            "name": "t1",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## One place for every CIB model\n",
+                "Health across classical ML, RAG, agents and the shared LLM endpoint. Green = all metrics within thresholds; amber/red = at least one breach."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "k1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    {
+                      "name": "models",
+                      "expression": "`models`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Models monitored"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "models",
+                  "displayName": "Models monitored"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "k2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    {
+                      "name": "red",
+                      "expression": "`red`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Red"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "red",
+                  "displayName": "Red"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 1,
+            "y": 2,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "k3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    {
+                      "name": "amber",
+                      "expression": "`amber`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Amber"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "amber",
+                  "displayName": "Amber"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 2,
+            "y": 2,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "k4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    {
+                      "name": "green",
+                      "expression": "`green`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Green"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "green",
+                  "displayName": "Green"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 2,
+            "width": 1,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "k5",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "kpis",
+                  "fields": [
+                    {
+                      "name": "avg_health",
+                      "expression": "`avg_health`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 2,
+              "widgetType": "counter",
+              "frame": {
+                "showTitle": true,
+                "title": "Average health score"
+              },
+              "encodings": {
+                "value": {
+                  "fieldName": "avg_health",
+                  "displayName": "Average health score"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 4,
+            "y": 2,
+            "width": 2,
+            "height": 3
+          }
+        },
+        {
+          "widget": {
+            "name": "tt",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "today",
+                  "fields": [
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    },
+                    {
+                      "name": "owner_team",
+                      "expression": "`owner_team`"
+                    },
+                    {
+                      "name": "bucket",
+                      "expression": "`bucket`"
+                    },
+                    {
+                      "name": "risk_tier",
+                      "expression": "`risk_tier`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "health_score",
+                      "expression": "`health_score`"
+                    },
+                    {
+                      "name": "red_metrics",
+                      "expression": "`red_metrics`"
+                    },
+                    {
+                      "name": "amber_metrics",
+                      "expression": "`amber_metrics`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Model status today"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "model_name",
+                    "displayName": "model name",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "owner_team",
+                    "displayName": "owner team",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "bucket",
+                    "displayName": "bucket",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "risk_tier",
+                    "displayName": "risk tier",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "status",
+                    "displayName": "status",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "health_score",
+                    "displayName": "health score",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "red_metrics",
+                    "displayName": "red metrics",
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "amber_metrics",
+                    "displayName": "amber metrics",
+                    "order": 7
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 5,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "ht",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "health_trend",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "health_score",
+                      "expression": "`health_score`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Health score, last 90 days"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "health_score",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "health score"
+                },
+                "color": {
+                  "fieldName": "model_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "model name"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 11,
+            "width": 6,
+            "height": 7
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "governance",
+      "displayName": "Governance & model risk",
+      "layout": [
+        {
+          "widget": {
+            "name": "t2",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Ongoing monitoring evidence\n",
+                "Inventory, ownership and breach history per model, with every status change logged."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "inv",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "inventory",
+                  "fields": [
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    },
+                    {
+                      "name": "owner_team",
+                      "expression": "`owner_team`"
+                    },
+                    {
+                      "name": "risk_tier",
+                      "expression": "`risk_tier`"
+                    },
+                    {
+                      "name": "bucket",
+                      "expression": "`bucket`"
+                    },
+                    {
+                      "name": "lane",
+                      "expression": "`lane`"
+                    },
+                    {
+                      "name": "current_version",
+                      "expression": "`current_version`"
+                    },
+                    {
+                      "name": "source_workspace",
+                      "expression": "`source_workspace`"
+                    },
+                    {
+                      "name": "last_monitored",
+                      "expression": "`last_monitored`"
+                    },
+                    {
+                      "name": "red_metric_days_30d",
+                      "expression": "`red_metric_days_30d`"
+                    },
+                    {
+                      "name": "amber_metric_days_30d",
+                      "expression": "`amber_metric_days_30d`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Model inventory (last 30 days)"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "model_name",
+                    "displayName": "model name",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "owner_team",
+                    "displayName": "owner team",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "risk_tier",
+                    "displayName": "risk tier",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "bucket",
+                    "displayName": "bucket",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "lane",
+                    "displayName": "lane",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "current_version",
+                    "displayName": "current version",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "source_workspace",
+                    "displayName": "source workspace",
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "last_monitored",
+                    "displayName": "last monitored",
+                    "order": 7
+                  },
+                  {
+                    "fieldName": "red_metric_days_30d",
+                    "displayName": "red metric days 30d",
+                    "order": 8
+                  },
+                  {
+                    "fieldName": "amber_metric_days_30d",
+                    "displayName": "amber metric days 30d",
+                    "order": 9
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "bc",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "breach_by_category",
+                  "fields": [
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "breach_days",
+                      "expression": "`breach_days`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "bar",
+              "frame": {
+                "showTitle": true,
+                "title": "Breach days by category (30 days)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "category",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "category"
+                },
+                "y": {
+                  "fieldName": "breach_days",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "breach days"
+                },
+                "color": {
+                  "fieldName": "model_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "model name"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 8,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "al",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "alerts",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    },
+                    {
+                      "name": "owner_team",
+                      "expression": "`owner_team`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    },
+                    {
+                      "name": "alert_type",
+                      "expression": "`alert_type`"
+                    },
+                    {
+                      "name": "to_status",
+                      "expression": "`to_status`"
+                    },
+                    {
+                      "name": "value",
+                      "expression": "`value`"
+                    },
+                    {
+                      "name": "threshold",
+                      "expression": "`threshold`"
+                    },
+                    {
+                      "name": "message",
+                      "expression": "`message`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Alert log"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "metric_date",
+                    "displayName": "metric date",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "model_name",
+                    "displayName": "model name",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "owner_team",
+                    "displayName": "owner team",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "metric",
+                    "displayName": "metric",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "alert_type",
+                    "displayName": "alert type",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "to_status",
+                    "displayName": "to status",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "value",
+                    "displayName": "value",
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "threshold",
+                    "displayName": "threshold",
+                    "order": 7
+                  },
+                  {
+                    "fieldName": "message",
+                    "displayName": "message",
+                    "order": 8
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 8,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "ops",
+      "displayName": "Triage & agent memory",
+      "layout": [
+        {
+          "widget": {
+            "name": "t3",
+            "multilineTextboxSpec": {
+              "lines": [
+                "## Alert triage (Lakebase) and agent memory\n",
+                "Triage state is written by the app to Lakebase and synced here nightly. Memory metrics cover recall, grounding, conflicts, leakage and PII held in memory."
+              ]
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 2
+          }
+        },
+        {
+          "widget": {
+            "name": "tk",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "triage_kpi",
+                  "fields": [
+                    {
+                      "name": "owner_team",
+                      "expression": "`owner_team`"
+                    },
+                    {
+                      "name": "open_alerts",
+                      "expression": "`open_alerts`"
+                    },
+                    {
+                      "name": "open_p1",
+                      "expression": "`open_p1`"
+                    },
+                    {
+                      "name": "unacknowledged",
+                      "expression": "`unacknowledged`"
+                    },
+                    {
+                      "name": "mtta_hours",
+                      "expression": "`mtta_hours`"
+                    },
+                    {
+                      "name": "mttr_hours",
+                      "expression": "`mttr_hours`"
+                    },
+                    {
+                      "name": "false_positive_rate",
+                      "expression": "`false_positive_rate`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Triage KPIs by owner team"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "owner_team",
+                    "displayName": "owner team",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "open_alerts",
+                    "displayName": "open alerts",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "open_p1",
+                    "displayName": "open p1",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "unacknowledged",
+                    "displayName": "unacknowledged",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "mtta_hours",
+                    "displayName": "mtta hours",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "mttr_hours",
+                    "displayName": "mttr hours",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "false_positive_rate",
+                    "displayName": "false positive rate",
+                    "order": 6
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 2,
+            "width": 6,
+            "height": 4
+          }
+        },
+        {
+          "widget": {
+            "name": "to",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "triage_open",
+                  "fields": [
+                    {
+                      "name": "priority",
+                      "expression": "`priority`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    },
+                    {
+                      "name": "triage_status",
+                      "expression": "`triage_status`"
+                    },
+                    {
+                      "name": "assignee",
+                      "expression": "`assignee`"
+                    },
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "message",
+                      "expression": "`message`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Open alerts"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "priority",
+                    "displayName": "priority",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "model_name",
+                    "displayName": "model name",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "metric",
+                    "displayName": "metric",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "triage_status",
+                    "displayName": "triage status",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "assignee",
+                    "displayName": "assignee",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "metric_date",
+                    "displayName": "metric date",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "message",
+                    "displayName": "message",
+                    "order": 6
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 6,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "mm",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "memory",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "eval_value",
+                      "expression": "`eval_value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Client brief agent \u00b7 memory metrics"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "eval_value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "eval value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 12,
+            "width": 6,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "classical",
+      "displayName": "Classical ML",
+      "layout": [
+        {
+          "widget": {
+            "name": "p1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "pd_perf",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "eval_value",
+                      "expression": "`eval_value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "PD model \u00b7 performance (7-day mean)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "eval_value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "eval value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "pd_drift",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "value",
+                      "expression": "`value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "PD model \u00b7 drift vs baseline"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "p3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "pd_fair",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "approval_rate",
+                      "expression": "`approval_rate`"
+                    },
+                    {
+                      "name": "country",
+                      "expression": "`country`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "PD model \u00b7 approval rate by country"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "approval_rate",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "approval rate"
+                },
+                "color": {
+                  "fieldName": "country",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "country"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "f1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "fc_err",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "value",
+                      "expression": "`value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Trade volume forecast \u00b7 error (USD m)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "genai",
+      "displayName": "GenAI & agents",
+      "layout": [
+        {
+          "widget": {
+            "name": "g1",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "rag_quality",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "eval_value",
+                      "expression": "`eval_value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Credit policy RAG \u00b7 retrieval and answer quality"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "eval_value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "eval value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "g2",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "safety",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "safety_violation_rate",
+                      "expression": "`safety_violation_rate`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Safety violation rate"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "safety_violation_rate",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "safety violation rate"
+                },
+                "color": {
+                  "fieldName": "model_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "model name"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 0,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "g3",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "agent_gov",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "eval_value",
+                      "expression": "`eval_value`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Client brief agent \u00b7 controls"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "eval_value",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "eval value"
+                },
+                "color": {
+                  "fieldName": "metric",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "metric"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        },
+        {
+          "widget": {
+            "name": "g4",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "cost",
+                  "fields": [
+                    {
+                      "name": "metric_date",
+                      "expression": "`metric_date`"
+                    },
+                    {
+                      "name": "usd",
+                      "expression": "`usd`"
+                    },
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 3,
+              "widgetType": "line",
+              "frame": {
+                "showTitle": true,
+                "title": "Cost per request / successful query (USD)"
+              },
+              "encodings": {
+                "x": {
+                  "fieldName": "metric_date",
+                  "scale": {
+                    "type": "temporal"
+                  },
+                  "displayName": "Date"
+                },
+                "y": {
+                  "fieldName": "usd",
+                  "scale": {
+                    "type": "quantitative"
+                  },
+                  "displayName": "usd"
+                },
+                "color": {
+                  "fieldName": "model_name",
+                  "scale": {
+                    "type": "categorical"
+                  },
+                  "displayName": "model name"
+                }
+              }
+            }
+          },
+          "position": {
+            "x": 3,
+            "y": 6,
+            "width": 3,
+            "height": 6
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    },
+    {
+      "name": "explorer",
+      "displayName": "Metric explorer",
+      "layout": [
+        {
+          "widget": {
+            "name": "ex",
+            "queries": [
+              {
+                "name": "main_query",
+                "query": {
+                  "datasetName": "explorer",
+                  "fields": [
+                    {
+                      "name": "model_name",
+                      "expression": "`model_name`"
+                    },
+                    {
+                      "name": "metric",
+                      "expression": "`metric`"
+                    },
+                    {
+                      "name": "category",
+                      "expression": "`category`"
+                    },
+                    {
+                      "name": "value",
+                      "expression": "`value`"
+                    },
+                    {
+                      "name": "evaluated",
+                      "expression": "`evaluated`"
+                    },
+                    {
+                      "name": "amber",
+                      "expression": "`amber`"
+                    },
+                    {
+                      "name": "red",
+                      "expression": "`red`"
+                    },
+                    {
+                      "name": "status",
+                      "expression": "`status`"
+                    },
+                    {
+                      "name": "source",
+                      "expression": "`source`"
+                    }
+                  ],
+                  "disaggregated": true
+                }
+              }
+            ],
+            "spec": {
+              "version": 1,
+              "widgetType": "table",
+              "frame": {
+                "showTitle": true,
+                "title": "Every contract metric, latest day"
+              },
+              "encodings": {
+                "columns": [
+                  {
+                    "fieldName": "model_name",
+                    "displayName": "model name",
+                    "order": 0
+                  },
+                  {
+                    "fieldName": "metric",
+                    "displayName": "metric",
+                    "order": 1
+                  },
+                  {
+                    "fieldName": "category",
+                    "displayName": "category",
+                    "order": 2
+                  },
+                  {
+                    "fieldName": "value",
+                    "displayName": "value",
+                    "order": 3
+                  },
+                  {
+                    "fieldName": "evaluated",
+                    "displayName": "evaluated",
+                    "order": 4
+                  },
+                  {
+                    "fieldName": "amber",
+                    "displayName": "amber",
+                    "order": 5
+                  },
+                  {
+                    "fieldName": "red",
+                    "displayName": "red",
+                    "order": 6
+                  },
+                  {
+                    "fieldName": "status",
+                    "displayName": "status",
+                    "order": 7
+                  },
+                  {
+                    "fieldName": "source",
+                    "displayName": "source",
+                    "order": 8
+                  }
+                ]
+              }
+            }
+          },
+          "position": {
+            "x": 0,
+            "y": 0,
+            "width": 6,
+            "height": 12
+          }
+        }
+      ],
+      "pageType": "PAGE_TYPE_CANVAS"
+    }
+  ]
+}
