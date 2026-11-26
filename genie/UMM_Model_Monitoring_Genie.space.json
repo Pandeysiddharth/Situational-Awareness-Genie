@@ -1,0 +1,118 @@
+{
+  "version": 2,
+  "config": {
+    "sample_questions": [
+      {
+        "id": "279574d074524b189039b6be28df43d6",
+        "question": [
+          "List every alert for the client brief agent in the last 30 days"
+        ]
+      },
+      {
+        "id": "2a4a39d282514fc19027cd2c5f785b75",
+        "question": [
+          "Show groundedness for the credit policy assistant over the last 30 days"
+        ]
+      },
+      {
+        "id": "3f9c37a692a447f0b02ee656c1d60af7",
+        "question": [
+          "When did the PD model's accuracy first go red?"
+        ]
+      },
+      {
+        "id": "9f77966f42b54b2c96d9356f42fd8f96",
+        "question": [
+          "Which metrics breached for AI Factory models this week?"
+        ]
+      },
+      {
+        "id": "b842fa2a309049ab946cc05c88707f3b",
+        "question": [
+          "Is the client brief agent's memory holding any personal data?"
+        ]
+      },
+      {
+        "id": "ba5830c93c414f2a882d7030871efc46",
+        "question": [
+          "How has the agent's cost per request changed versus its baseline?"
+        ]
+      },
+      {
+        "id": "cafd5e6b2d5e4325aa0788faa2630aa2",
+        "question": [
+          "Which models are red or amber today, and why?"
+        ]
+      },
+      {
+        "id": "fae8462a6ef94046ad3841c600aa26ca",
+        "question": [
+          "Which country has the lowest approval rate for the PD model this month?"
+        ]
+      },
+      {
+        "id": "fd5e717e6c1d4e1294089f8d83359bfc",
+        "question": [
+          "Which P1 alerts are still unacknowledged, and who owns them?"
+        ]
+      }
+    ]
+  },
+  "data_sources": {
+    "tables": [
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.dim_metric_thresholds"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.dim_model"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_alert_triage"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_alerts"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_metric_health_daily"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_metric_slice_daily"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_model_health_daily"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.fact_triage_kpis"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.model_version_registry"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.mv_metric_health"
+      },
+      {
+        "identifier": "demo_unified_model_monitoring.hub_gold.mv_model_health"
+      }
+    ]
+  },
+  "instructions": {
+    "text_instructions": [
+      {
+        "id": "be7e831779a74af2b73a5d5261c5f535",
+        "content": [
+          "You answer questions about the health of Standard Chartered CIB's machine learning and AI models, monitored in one hub.\n",
+          "Models: Counterparty Default PD (classification, Tier 1), Trade Volume Forecast (regression), Credit Policy Assistant (RAG), RM Client Brief Agent (tool-calling agent), and the Shared LLM Endpoint behind the last two.\n",
+          "- \"Status\" is green, amber or red per metric per day. A model's status is its worst metric. Health score 100 means all metrics are green; amber counts 1 and red counts 2.\n",
+          "- Use fact_model_health_daily for model-level questions, fact_metric_health_daily for metric-level questions, fact_alerts for \"when did X start/stop\", and fact_metric_slice_daily for country, query category or agent intent breakdowns.\n",
+          "- \"Today\" or \"now\" means the latest metric_date in the table, not current_date().\n",
+          "- eval_value is what's compared with thresholds (rolling mean, or ratio to baseline for relative metrics); value is the raw daily figure. Quote both when explaining a breach.\n",
+          "- Owner teams: CIB Credit Risk Analytics, CIB Markets Analytics, AI Factory. \"AI Factory models\" means owner_team = 'AI Factory'.\n",
+          "- Fairness questions about the PD model use approval_rate_gap and quality_gap, with country detail in fact_metric_slice_daily.\n",
+          "- When asked \"why\", list the metrics in red_metrics / amber_metrics and give each metric's value against its threshold.\n",
+          "- Triage questions (\"who is working on\", \"what's unacknowledged\", \"time to resolve\") use fact_alert_triage and fact_triage_kpis. Priorities: P1 = red on a Tier 1 model, P2 = other red, P3 = amber.\n",
+          "- Agent memory metrics (memory_recall_rate, memory_grounded_rate, memory_conflict_rate, memory_leakage_rate, memory_pii_disclosure_rate, pii_in_memory_rate, stale_memory_share) belong to the RM Client Brief Agent."
+        ]
+      }
+    ]
+  }
+}

@@ -1,0 +1,9 @@
+{
+  "space_id": "01f1e8bd3a2c16ceab9561ac5638e175",
+  "title": "UMM \u00b7 Model Monitoring Genie",
+  "description": "Ask about model health across the CIB portfolio.",
+  "warehouse_id": "d1fcbbdbe403bdbc",
+  "parent_path": "/Shared/model_monitoring",
+  "create_time": "2026-11-25T10:44:44.764Z",
+  "update_time": "2026-11-26T05:09:52.742Z"
+}
